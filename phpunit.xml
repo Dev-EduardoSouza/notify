@@ -31,6 +31,13 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="LOG_CHANNEL" value="null"/>
+        <env name="TELEGRAM_BOT_TOKEN" value="0:TEST_TOKEN"/>
+        <env name="TELEGRAM_API_BASE" value="https://telegram.invalid"/>
+        <env name="TELEGRAM_RECIPIENTS" value="eduardo:1"/>
+        <env name="NOTION_TOKEN" value="ntn_test"/>
+        <env name="NOTION_API_BASE" value="https://notion.invalid"/>
+        <env name="LINKEDIN_PARENT_PAGE_ID" value="00000000-0000-4000-8000-000000000000"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>

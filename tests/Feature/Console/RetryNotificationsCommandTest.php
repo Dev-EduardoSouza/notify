@@ -7,6 +7,8 @@ namespace Tests\Feature\Console;
 use App\Models\Delivery;
 use App\Notifications\DeliveryStatus;
 use App\Notifications\Text\TextSplitter;
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
@@ -101,7 +103,12 @@ final class RetryNotificationsCommandTest extends TestCase
 
     public function testIsScheduledEveryFiveMinutes(): void
     {
-        $this->artisan('schedule:list')->expectsOutputToContain('*/5 * * * *  php artisan notifications:retry');
+        $event = collect($this->app->make(Schedule::class)->events())
+            ->first(fn (Event $e): bool => str_contains((string) $e->command, 'notifications:retry'));
+
+        self::assertNotNull($event);
+        self::assertSame('*/5 * * * *', $event->expression);
+        self::assertTrue($event->withoutOverlapping);
     }
 
     private function retrying(
