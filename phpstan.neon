@@ -6,3 +6,4 @@ parameters:
         - tests
         - bin
         - public
+        - config

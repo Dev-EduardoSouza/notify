@@ -8,5 +8,6 @@
     <file>tests</file>
     <file>bin</file>
     <file>public</file>
+    <file>config</file>
     <rule ref="PSR12"/>
 </ruleset>
