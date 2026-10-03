@@ -1,15 +1,5 @@
 <?php
 
-/**
- * Development stand-in for the Telegram Bot API and the Notion API.
- *
- *   php -S 127.0.0.1:8090 dev/stubs/router.php
- *   TELEGRAM_API_BASE=http://127.0.0.1:8090  NOTION_API_BASE=http://127.0.0.1:8090
- *
- * Behaviour is driven by JSON files in dev/stubs/state/ (see dev/stubs/scenario.php).
- * Every request is appended to dev/stubs/state/calls.jsonl for inspection.
- */
-
 declare(strict_types=1);
 
 const STATE_DIR = __DIR__ . '/state';
@@ -19,9 +9,7 @@ if (!is_dir(STATE_DIR)) {
     mkdir(STATE_DIR, 0775, true);
 }
 
-/**
- * @return array<string, mixed>
- */
+/** @return array<string, mixed> */
 function state(string $name): array
 {
     $file = STATE_DIR . "/{$name}.json";
@@ -62,9 +50,7 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
 $input = json_decode((string) file_get_contents('php://input'), true);
 $input = is_array($input) ? $input : null;
 
-// ---------------------------------------------------------------- Telegram
 if (preg_match('#^/bot([^/]+)/(\w+)$#', $path, $m) === 1) {
-    // The token is never recorded, only whether it looked valid.
     record('telegram', '/bot***/' . $m[2], $input);
 
     $scenario = state('telegram');
@@ -112,7 +98,6 @@ if (preg_match('#^/bot([^/]+)/(\w+)$#', $path, $m) === 1) {
     return true;
 }
 
-// ------------------------------------------------------------------ Notion
 if (preg_match('#^/v1/blocks/([^/]+)/children$#', $path, $m) === 1) {
     record('notion', $path . (isset($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : ''), null);
 
@@ -150,11 +135,6 @@ reply(404, ['error' => 'stub: unknown route', 'path' => $path]);
 return true;
 
 /**
- * Fixture times can be relative to "now", so the "created today" logic is testable:
- *   "bahia-today@10:30" -> today 10:30 in America/Bahia, as UTC ISO-8601
- *   "utc-today@02:00"   -> Bahia's today date at 02:00 UTC, i.e. 23:00 of the previous day in Bahia
- *   "bahia-yesterday@11:00"
- *
  * @param array<string, mixed> $block
  * @return array<string, mixed>
  */
@@ -165,7 +145,6 @@ function resolveTimes(array $block): array
         if (!is_string($value) || preg_match('/^(bahia|utc)-(today|yesterday)@(\d\d:\d\d)$/', $value, $m) !== 1) {
             continue;
         }
-        // The calendar day is always Bahia's; only the clock uses the given zone.
         $day = new DateTimeImmutable($m[2] === 'today' ? 'today' : 'yesterday', new DateTimeZone('America/Bahia'));
         $zone = new DateTimeZone($m[1] === 'bahia' ? 'America/Bahia' : 'UTC');
         $time = new DateTimeImmutable($day->format('Y-m-d') . ' ' . $m[3], $zone);

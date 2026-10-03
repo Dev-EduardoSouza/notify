@@ -7,11 +7,6 @@ namespace App\Integrations;
 use RuntimeException;
 use Throwable;
 
-/**
- * Raised for failures talking to an external API. The message is built here
- * and never copies the underlying exception's message, which carries the
- * request URL (and the Telegram URL carries the bot token).
- */
 final class ExternalServiceException extends RuntimeException
 {
     public function __construct(
@@ -24,12 +19,10 @@ final class ExternalServiceException extends RuntimeException
 
     public static function connection(string $service, Throwable $previous): self
     {
-        // Keep only the cURL error number, e.g. "cURL error 28", which is safe and useful.
         $reason = preg_match('/cURL error \d+/', $previous->getMessage(), $match) === 1
             ? $match[0]
             : 'connection failed';
 
-        // The previous exception is deliberately not chained: its message holds the URL.
         return new self($service, $reason);
     }
 

@@ -14,17 +14,10 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
-/**
- * The single path every notification takes, whether it comes from the API
- * or from an internal job.
- */
 final class NotificationService
 {
     public const MAX_ATTEMPTS = 5;
 
-    /**
-     * Minutes to wait after attempt N (index N-1) before trying again.
-     */
     public const BACKOFF_MINUTES = [5, 15, 30, 60, 120];
 
     public function __construct(
@@ -33,19 +26,12 @@ final class NotificationService
     ) {
     }
 
-    /**
-     * @throws Channels\UnknownChannelException
-     * @throws Channels\UnknownRecipientException
-     * @throws UnsupportedFormatException
-     * @throws IdempotencyConflictException
-     */
     public function dispatch(NotificationRequest $request): DispatchResult
     {
         $channel = $this->channels->get($request->channel);
         if (!in_array($request->format, $channel->formats(), true)) {
             throw new UnsupportedFormatException($request->channel, $request->format);
         }
-        // Fails early for unknown aliases, before anything is stored.
         $this->recipients->resolve($request->channel, $request->recipient);
 
         $existing = $this->findReplay($request);
@@ -66,7 +52,6 @@ final class NotificationService
                 'status' => DeliveryStatus::Pending,
             ]);
         } catch (UniqueConstraintViolationException) {
-            // Another request with the same key won the race between our lookup and insert.
             $winner = $this->findReplay($request);
             if ($winner === null) {
                 throw new \LogicException('Unique violation without a matching delivery.');
@@ -78,10 +63,6 @@ final class NotificationService
         return new DispatchResult($this->attempt($delivery), false);
     }
 
-    /**
-     * Sends whatever is left of a delivery and records the outcome. Used for the
-     * first attempt and by notifications:retry.
-     */
     public function attempt(Delivery $delivery): Delivery
     {
         if ($delivery->status->isFinal() || $delivery->text === null) {
@@ -97,7 +78,6 @@ final class NotificationService
         $result = $channel->send(
             new OutgoingMessage($target, $delivery->text, $delivery->format),
             $delivery->delivered_parts,
-            // Persist progress after every part, so a crash or failure never resends it.
             function (int $delivered) use ($delivery): void {
                 $delivery->delivered_parts = $delivered;
                 $delivery->save();

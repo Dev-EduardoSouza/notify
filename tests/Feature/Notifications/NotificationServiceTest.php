@@ -84,7 +84,6 @@ final class NotificationServiceTest extends TestCase
         Http::fake(['tg.test/*' => Http::response(['ok' => true, 'result' => []])]);
         $request = $this->request('oi', 'race');
 
-        // Simulates another request inserting the same key between our lookup and our insert.
         Delivery::creating(function () use ($request): void {
             Delivery::flushEventListeners();
             DB::table('deliveries')->insert([
@@ -110,7 +109,6 @@ final class NotificationServiceTest extends TestCase
 
         self::assertSame(DeliveryStatus::Retrying, $delivery->status);
         self::assertSame('oi', $delivery->text);
-        // Backoff after attempt 1 is 5 min, but Telegram asked for 15.
         self::assertEquals(Carbon::now()->addSeconds(900), $delivery->next_attempt_at);
     }
 

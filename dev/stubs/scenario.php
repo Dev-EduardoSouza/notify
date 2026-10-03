@@ -1,15 +1,5 @@
 <?php
 
-/**
- * Sets the behaviour of the development stubs.
- *
- *   php dev/stubs/scenario.php reset
- *   php dev/stubs/scenario.php telegram ok|429|500|400|401 [retry_after=40]
- *   php dev/stubs/scenario.php telegram fail_on_call fail_on_call=3 fail_with=500
- *   php dev/stubs/scenario.php notion ok|401|500 [page_size=2] [fixture=notion-sem-hoje.json]
- *   php dev/stubs/scenario.php calls        # prints the recorded calls
- */
-
 declare(strict_types=1);
 
 $dir = __DIR__ . '/state';

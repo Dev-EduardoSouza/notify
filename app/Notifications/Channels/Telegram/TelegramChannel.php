@@ -19,16 +19,12 @@ final class TelegramChannel implements NotificationChannel
     /** @var Closure(int): void */
     private readonly Closure $sleep;
 
-    /**
-     * @param int $maxInlineWait Longest retry_after (seconds) worth waiting for inside the request.
-     * @param int $inlineRetries Extra attempts per part for 5xx and network errors.
-     * @param (Closure(int): void)|null $sleep Injected so tests do not actually wait.
-     */
+    /** @param (Closure(int): void)|null $sleep */
     public function __construct(
         private readonly TelegramApi $api,
         private readonly TextSplitter $splitter,
-        private readonly int $maxInlineWait = 5,
-        private readonly int $inlineRetries = 2,
+        private readonly int $maxInlineWaitSeconds = 5,
+        private readonly int $inlineRetriesPerPart = 2,
         ?Closure $sleep = null,
     ) {
         $this->sleep = $sleep ?? static function (int $seconds): void {
@@ -52,7 +48,6 @@ final class TelegramChannel implements NotificationChannel
         $total = count($parts);
 
         for ($index = $fromPart; $index < $total; $index++) {
-            // Telegram rejects blank messages; a whitespace-only part counts as delivered.
             if (trim($parts[$index]) !== '') {
                 $failure = $this->sendPart($message, $parts[$index], $index, $total);
                 if ($failure !== null) {
@@ -65,9 +60,7 @@ final class TelegramChannel implements NotificationChannel
         return SendResult::sent($total);
     }
 
-    /**
-     * @return SendResult|null null when the part was delivered.
-     */
+    /** @return SendResult|null null when the part was delivered. */
     private function sendPart(OutgoingMessage $message, string $text, int $index, int $total): ?SendResult
     {
         $params = [
@@ -86,7 +79,7 @@ final class TelegramChannel implements NotificationChannel
             try {
                 $response = $this->api->call('sendMessage', $params);
             } catch (ExternalServiceException $e) {
-                if ($transientFailures++ < $this->inlineRetries) {
+                if ($transientFailures++ < $this->inlineRetriesPerPart) {
                     ($this->sleep)($transientFailures);
                     continue;
                 }
@@ -100,7 +93,7 @@ final class TelegramChannel implements NotificationChannel
 
             if ($response->isRateLimited()) {
                 $wait = $response->retryAfter ?? 30;
-                if (!$waitedForRateLimit && $wait <= $this->maxInlineWait) {
+                if (!$waitedForRateLimit && $wait <= $this->maxInlineWaitSeconds) {
                     $waitedForRateLimit = true;
                     ($this->sleep)($wait);
                     continue;
@@ -110,7 +103,7 @@ final class TelegramChannel implements NotificationChannel
             }
 
             if ($response->isServerError()) {
-                if ($transientFailures++ < $this->inlineRetries) {
+                if ($transientFailures++ < $this->inlineRetriesPerPart) {
                     ($this->sleep)($transientFailures);
                     continue;
                 }
@@ -124,7 +117,6 @@ final class TelegramChannel implements NotificationChannel
 
     private function describe(TelegramResponse $response): string
     {
-        // Telegram descriptions never echo the token; keep them short for the database column.
         return mb_substr(trim(sprintf('telegram: HTTP %d %s', $response->status, $response->description)), 0, 250);
     }
 

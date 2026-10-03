@@ -6,15 +6,6 @@ namespace App\Notifications\Text;
 
 use InvalidArgumentException;
 
-/**
- * Splits text into parts that fit a message limit measured in UTF-16 code
- * units, which is how Telegram counts (an emoji outside the BMP counts as 2).
- *
- * Cuts prefer a blank line, then a line break, then a space, as long as the
- * cut lands in the second half of the window (no tiny messages); otherwise the
- * text is cut hard, always between code points.
- * Separators stay at the end of the part, so implode('', $parts) === $text.
- */
 final class TextSplitter
 {
     private const SEPARATORS = ["\n\n", "\n", ' '];
@@ -26,9 +17,7 @@ final class TextSplitter
         }
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function split(string $text): array
     {
         $chars = mb_str_split($text, 1, 'UTF-8');
@@ -54,16 +43,11 @@ final class TextSplitter
         return intdiv(strlen((string) mb_convert_encoding($text, 'UTF-16LE', 'UTF-8')), 2);
     }
 
-    /**
-     * How many leading code points fit in the limit.
-     *
-     * @param list<string> $chars
-     */
+    /** @param list<string> $chars */
     private function countFitting(array $chars): int
     {
         $units = 0;
         foreach ($chars as $index => $char) {
-            // 4-byte UTF-8 sequences are the code points above U+FFFF: two UTF-16 units.
             $units += strlen($char) === 4 ? 2 : 1;
             if ($units > $this->limit) {
                 return $index;
@@ -73,11 +57,7 @@ final class TextSplitter
         return count($chars);
     }
 
-    /**
-     * Position right after the last preferred separator in the window, if any.
-     *
-     * @param list<string> $window
-     */
+    /** @param list<string> $window */
     private function findCut(array $window): ?int
     {
         $joined = implode('', $window);

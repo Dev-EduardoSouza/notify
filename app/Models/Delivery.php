@@ -36,11 +36,7 @@ final class Delivery extends Model
 
     protected $guarded = [];
 
-    /**
-     * Same defaults as the migration, so a freshly created model has them without a reload.
-     *
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     protected $attributes = [
         'format' => 'plain',
         'parts_total' => 0,

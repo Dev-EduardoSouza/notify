@@ -6,10 +6,8 @@ namespace App\Notifications;
 
 enum DeliveryStatus: string
 {
-    // Created, first attempt in progress.
     case Pending = 'pending';
     case Sent = 'sent';
-    // Waiting for notifications:retry.
     case Retrying = 'retrying';
     case Failed = 'failed';
 

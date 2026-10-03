@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 namespace App\Integrations\Telegram;
 
-/**
- * Bot API answer, successful or not. HTTP errors are data here, not
- * exceptions, because the channel decides between retry and failure.
- */
 final class TelegramResponse
 {
-    /**
-     * @param array<string, mixed> $result
-     */
+    /** @param array<string, mixed> $result */
     public function __construct(
         public readonly int $status,
         public readonly bool $ok,

@@ -18,11 +18,7 @@ final class TelegramApi
     ) {
     }
 
-    /**
-     * @param array<string, mixed> $params
-     *
-     * @throws ExternalServiceException on network failures only.
-     */
+    /** @param array<string, mixed> $params */
     public function call(string $method, array $params): TelegramResponse
     {
         $url = sprintf('%s/bot%s/%s', rtrim($this->baseUrl, '/'), $this->token, $method);

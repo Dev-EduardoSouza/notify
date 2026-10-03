@@ -29,9 +29,6 @@ final class NotificationRequest
         return new self(self::SYSTEM_CLIENT, $channel, $recipient, $text, 'plain', $idempotencyKey);
     }
 
-    /**
-     * Fingerprint of what is being sent, to tell a retry from a conflicting reuse of a key.
-     */
     public function hash(): string
     {
         return hash('sha256', (string) json_encode([$this->channel, $this->recipient, $this->format, $this->text]));

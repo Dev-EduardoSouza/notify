@@ -8,19 +8,12 @@ use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
-/**
- * First thing to run on a new server. Works without a .env, so it can
- * explain what is missing instead of failing on it.
- */
 final class DiagnoseCommand extends Command
 {
     public const MIN_PHP = '8.3.0';
 
     public const REQUIRED_EXTENSIONS = ['curl', 'json', 'mbstring', 'openssl', 'pdo_sqlite'];
 
-    /**
-     * Env variable => config key that must end up non-empty.
-     */
     public const REQUIRED_CONFIG = [
         'APP_KEY' => 'app.key',
         'TELEGRAM_BOT_TOKEN' => 'notifications.channels.telegram.bot_token',
@@ -53,7 +46,6 @@ final class DiagnoseCommand extends Command
             $this->report(extension_loaded($extension), sprintf('extension %s', $extension));
         }
 
-        // SQLite needs to write next to the database file (journal/WAL), not only to the file.
         foreach ([storage_path(), storage_path('logs'), database_path()] as $folder) {
             $this->report($this->isWritable($folder), sprintf('writable %s', $folder));
         }
@@ -76,9 +68,6 @@ final class DiagnoseCommand extends Command
         return $this->failures === 0 ? self::SUCCESS : self::FAILURE;
     }
 
-    /**
-     * Probes with a real file write: is_writable() lies under some ACL setups.
-     */
     private function isWritable(string $path): bool
     {
         if (!is_dir($path)) {
@@ -94,9 +83,6 @@ final class DiagnoseCommand extends Command
         return true;
     }
 
-    /**
-     * Any HTTP answer counts: the goal is DNS + TLS + network, not an API call.
-     */
     private function reachable(string $url): bool
     {
         try {

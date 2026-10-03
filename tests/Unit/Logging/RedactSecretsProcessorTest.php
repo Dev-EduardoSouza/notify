@@ -46,9 +46,7 @@ final class RedactSecretsProcessorTest extends TestCase
         self::assertStringNotContainsString('AAHfake', (string) json_encode($record->context));
     }
 
-    /**
-     * @param array<string, mixed> $context
-     */
+    /** @param array<string, mixed> $context */
     private function process(string $message, array $context): LogRecord
     {
         $record = new LogRecord(new DateTimeImmutable(), 'test', Level::Info, $message, $context);

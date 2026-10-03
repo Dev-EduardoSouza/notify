@@ -7,11 +7,6 @@ namespace App\Notifications\Channels;
 use Illuminate\Contracts\Config\Repository;
 use UnexpectedValueException;
 
-/**
- * Maps public aliases ("eduardo") to channel targets (chat ids) kept in
- * config, read from notifications.channels.<channel>.recipients as
- * "alias:target,alias2:target2".
- */
 final class RecipientResolver
 {
     public const ALIAS_PATTERN = '/^[a-z0-9][a-z0-9_-]{0,63}$/';
@@ -25,17 +20,13 @@ final class RecipientResolver
         return $this->map($channel)[$alias] ?? throw new UnknownRecipientException($channel, $alias);
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function aliases(string $channel): array
     {
         return array_keys($this->map($channel));
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function map(string $channel): array
     {
         $raw = $this->config->get("notifications.channels.{$channel}.recipients", '');
@@ -49,7 +40,6 @@ final class RecipientResolver
             $alias = strtolower(trim($alias));
             $target = trim($target);
             if (preg_match(self::ALIAS_PATTERN, $alias) !== 1 || $target === '') {
-                // Names the channel only: the pair may contain a chat id.
                 throw new UnexpectedValueException(sprintf('Invalid recipient entry in %s recipients config.', $channel));
             }
             $map[$alias] = $target;

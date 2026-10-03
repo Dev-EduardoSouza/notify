@@ -14,9 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: '',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // This service only speaks JSON.
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => true);
     })->create();

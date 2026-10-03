@@ -22,8 +22,6 @@ final class NotionApi
     /**
      * @param array<string, scalar> $query
      * @return array<string, mixed>
-     *
-     * @throws ExternalServiceException on network failures and non-2xx answers.
      */
     public function get(string $path, array $query = []): array
     {
@@ -43,7 +41,6 @@ final class NotionApi
         $body = is_array($body) ? $body : [];
 
         if (!$response->successful()) {
-            // Notion error bodies carry a code and a message, never the token.
             $detail = trim(sprintf('%s %s', $body['code'] ?? '', $body['message'] ?? ''));
             throw ExternalServiceException::http('notion', $response->status(), $detail);
         }

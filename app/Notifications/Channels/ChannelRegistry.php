@@ -9,9 +9,7 @@ final class ChannelRegistry
     /** @var array<string, NotificationChannel> */
     private array $channels = [];
 
-    /**
-     * @param iterable<NotificationChannel> $channels
-     */
+    /** @param iterable<NotificationChannel> $channels */
     public function __construct(iterable $channels = [])
     {
         foreach ($channels as $channel) {
@@ -34,9 +32,7 @@ final class ChannelRegistry
         return $this->channels[$name] ?? throw new UnknownChannelException($name);
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function names(): array
     {
         return array_keys($this->channels);

@@ -37,17 +37,12 @@ class AppServiceProvider extends ServiceProvider
         ));
     }
 
-    /**
-     * Channels available to the API and jobs. A new channel is one more line here.
-     *
-     * @return list<class-string<\App\Notifications\Channels\NotificationChannel>>
-     */
+    /** @return list<class-string<\App\Notifications\Channels\NotificationChannel>> */
     public const CHANNELS = [
         TelegramChannel::class,
     ];
 
     public function boot(): void
     {
-        //
     }
 }

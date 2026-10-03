@@ -25,7 +25,6 @@ final class TextSplitterTest extends TestCase
         $splitter = new TextSplitter(12);
 
         self::assertSame(["aaaaaaa\n\n", 'bb cc dd'], $splitter->split("aaaaaaa\n\nbb cc dd"));
-        // A blank line too early would leave a tiny part, so the later line break wins.
         self::assertSame(["aaa\n\nbbb\n", 'ccc ddd'], $splitter->split("aaa\n\nbbb\nccc ddd"));
         self::assertSame(["aaaa\nbbbb ", 'cccc'], $splitter->split("aaaa\nbbbb cccc"));
         self::assertSame(['aaaa bbbb ', 'cccc'], $splitter->split('aaaa bbbb cccc'));
@@ -43,9 +42,7 @@ final class TextSplitterTest extends TestCase
         self::assertSame(['😀😀', '😀a'], $parts);
     }
 
-    /**
-     * @return iterable<string, array{string}>
-     */
+    /** @return iterable<string, array{string}> */
     public static function longTexts(): iterable
     {
         $words = ['ação', 'café', 'notificação', '😀', '🚀🔥', 'Ω', 'texto', "\n", "\n\n", 'emoji👨‍👩‍👧'];

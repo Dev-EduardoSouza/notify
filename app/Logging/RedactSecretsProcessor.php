@@ -8,11 +8,6 @@ use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
 use Throwable;
 
-/**
- * Keeps secrets and message bodies out of the logs: sensitive context keys
- * are dropped, and token-shaped strings are masked wherever they appear
- * (the Telegram API URL carries the bot token, so exception messages can too).
- */
 final class RedactSecretsProcessor implements ProcessorInterface
 {
     public const REDACTED = '[redacted]';
@@ -69,12 +64,7 @@ final class RedactSecretsProcessor implements ProcessorInterface
         };
     }
 
-    /**
-     * Replaces the exception object so the formatter never serializes
-     * its raw message or trace arguments.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function describe(Throwable $e): array
     {
         $described = [

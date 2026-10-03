@@ -12,9 +12,7 @@ return new class () extends Migration {
         Schema::create('api_keys', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 100);
-            // sha256 of the full key; the key itself is never stored.
             $table->char('key_hash', 64)->unique();
-            // First characters of the key, so a leaked key can be matched to its row.
             $table->string('key_prefix', 16);
             $table->json('recipients');
             $table->timestamp('last_used_at')->nullable();
