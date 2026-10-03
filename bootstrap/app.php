@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\ErrorResponder;
+use App\Http\Middleware\AuthenticateApiKey;
 use App\Http\Middleware\LimitRequestBody;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -10,6 +11,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->remove(HandleCors::class);
         $middleware->prepend(LimitRequestBody::class);
         $middleware->prepend(SecurityHeaders::class);
+        $middleware->prependToPriorityList(ThrottleRequests::class, AuthenticateApiKey::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => true);

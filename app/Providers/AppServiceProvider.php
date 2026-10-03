@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Http\Request;
+use Illuminate\Cache\RateLimiting\Limit;
+use App\Http\Middleware\AuthenticateApiKey;
 use App\Integrations\Notion\NotionApi;
 use App\Integrations\Telegram\TelegramApi;
 use App\Notifications\Channels\ChannelRegistry;
@@ -44,5 +48,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        RateLimiter::for('api-key', fn (Request $request): Limit => Limit::perMinute(max(1, (int) config('notifications.rate_limit_per_minute')))
+            ->by('api-key:' . AuthenticateApiKey::keyFrom($request)->id));
     }
 }
