@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 final class NotificationServiceTest extends TestCase
@@ -29,6 +30,7 @@ final class NotificationServiceTest extends TestCase
             'notifications.channels.telegram.recipients' => 'eduardo:42',
         ]);
         Carbon::setTestNow('2026-10-02 12:00:00');
+        Sleep::fake();
     }
 
     public function testSendsAndForgetsTheText(): void

@@ -18,7 +18,7 @@ final class NotificationService
 {
     public const MAX_ATTEMPTS = 5;
 
-    public const BACKOFF_MINUTES = [5, 15, 30, 60, 120];
+    public const BACKOFF_MINUTES = [5, 15, 30, 60];
 
     public function __construct(
         private readonly ChannelRegistry $channels,

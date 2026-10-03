@@ -13,13 +13,11 @@ use App\Notifications\Text\TextSplitter;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 final class TelegramChannelTest extends TestCase
 {
-    /** @var list<int> */
-    private array $sleeps = [];
-
     /** @var list<int> */
     private array $progress = [];
 
@@ -30,6 +28,7 @@ final class TelegramChannelTest extends TestCase
             'notifications.channels.telegram.api_base' => 'https://tg.test',
             'notifications.channels.telegram.bot_token' => '1:TOKEN',
         ]);
+        Sleep::fake();
     }
 
     public function testSendsEveryPartAndReportsProgress(): void
@@ -90,7 +89,7 @@ final class TelegramChannelTest extends TestCase
         $result = $this->send('oi');
 
         self::assertSame(SendOutcome::Sent, $result->outcome);
-        self::assertSame([3], $this->sleeps);
+        Sleep::assertSequence([Sleep::for(3)->seconds()]);
     }
 
     public function testLongRateLimitBecomesRetryWithDelay(): void
@@ -101,7 +100,7 @@ final class TelegramChannelTest extends TestCase
 
         self::assertSame(SendOutcome::Retry, $result->outcome);
         self::assertSame(40, $result->retryAfterSeconds);
-        self::assertSame([], $this->sleeps);
+        Sleep::assertNeverSlept();
     }
 
     public function testServerErrorsAreRetriedInlineThenDeferred(): void
@@ -111,7 +110,7 @@ final class TelegramChannelTest extends TestCase
         $result = $this->send('oi');
 
         self::assertSame(SendOutcome::Retry, $result->outcome);
-        self::assertSame([1, 2], $this->sleeps);
+        Sleep::assertSequence([Sleep::for(1)->seconds(), Sleep::for(2)->seconds()]);
         Http::assertSentCount(3);
     }
 
@@ -130,9 +129,6 @@ final class TelegramChannelTest extends TestCase
         $channel = new TelegramChannel(
             $this->app->make(TelegramApi::class),
             new TextSplitter($limit),
-            sleep: function (int $seconds): void {
-                $this->sleeps[] = $seconds;
-            },
         );
 
         return $channel->send(new OutgoingMessage('42', $text, $format), $fromPart, function (int $delivered): void {

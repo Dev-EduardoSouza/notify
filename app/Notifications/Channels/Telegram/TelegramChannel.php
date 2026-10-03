@@ -11,25 +11,17 @@ use App\Notifications\Channels\NotificationChannel;
 use App\Notifications\Channels\OutgoingMessage;
 use App\Notifications\Channels\SendResult;
 use App\Notifications\Text\TextSplitter;
-use Closure;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 
 final class TelegramChannel implements NotificationChannel
 {
-    /** @var Closure(int): void */
-    private readonly Closure $sleep;
-
-    /** @param (Closure(int): void)|null $sleep */
     public function __construct(
         private readonly TelegramApi $api,
         private readonly TextSplitter $splitter,
         private readonly int $maxInlineWaitSeconds = 5,
         private readonly int $inlineRetriesPerPart = 2,
-        ?Closure $sleep = null,
     ) {
-        $this->sleep = $sleep ?? static function (int $seconds): void {
-            sleep($seconds);
-        };
     }
 
     public function name(): string
@@ -80,7 +72,7 @@ final class TelegramChannel implements NotificationChannel
                 $response = $this->api->call('sendMessage', $params);
             } catch (ExternalServiceException $e) {
                 if ($transientFailures++ < $this->inlineRetriesPerPart) {
-                    ($this->sleep)($transientFailures);
+                    Sleep::for($transientFailures)->seconds();
                     continue;
                 }
 
@@ -95,7 +87,7 @@ final class TelegramChannel implements NotificationChannel
                 $wait = $response->retryAfter ?? 30;
                 if (!$waitedForRateLimit && $wait <= $this->maxInlineWaitSeconds) {
                     $waitedForRateLimit = true;
-                    ($this->sleep)($wait);
+                    Sleep::for($wait)->seconds();
                     continue;
                 }
 
@@ -104,7 +96,7 @@ final class TelegramChannel implements NotificationChannel
 
             if ($response->isServerError()) {
                 if ($transientFailures++ < $this->inlineRetriesPerPart) {
-                    ($this->sleep)($transientFailures);
+                    Sleep::for($transientFailures)->seconds();
                     continue;
                 }
 
