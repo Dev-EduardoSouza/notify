@@ -71,6 +71,7 @@ final class NotificationController
     public function show(Request $request, string $id): JsonResponse
     {
         $key = AuthenticateApiKey::keyFrom($request);
+        $id = strtolower($id);
 
         $delivery = preg_match('/^[0-9a-hjkmnp-tv-z]{26}$/', $id) === 1
             ? Delivery::query()->where('client_ref', $key->clientRef())->find($id)
