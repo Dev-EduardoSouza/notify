@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Docs\ApiDocumentation;
+use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -21,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        Scramble::ignoreDefaultRoutes();
+
         $this->app->singleton(TelegramApi::class, fn (Application $app): TelegramApi => new TelegramApi(
             $app->make(Factory::class),
             (string) config('notifications.channels.telegram.api_base'),
@@ -50,5 +54,7 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('api-key', fn (Request $request): Limit => Limit::perMinute(max(1, (int) config('notifications.rate_limit_per_minute')))
             ->by('api-key:' . AuthenticateApiKey::keyFrom($request)->id));
+
+        ApiDocumentation::register();
     }
 }

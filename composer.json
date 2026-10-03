@@ -10,11 +10,12 @@
     "license": "proprietary",
     "require": {
         "php": "^8.3",
-        "laravel/framework": "^13.17",
-        "laravel/tinker": "^3.0",
         "ext-curl": "*",
         "ext-mbstring": "*",
-        "ext-pdo_sqlite": "*"
+        "ext-pdo_sqlite": "*",
+        "dedoc/scramble": "^0.13.47",
+        "laravel/framework": "^13.17",
+        "laravel/tinker": "^3.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
