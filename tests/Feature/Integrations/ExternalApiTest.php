@@ -88,4 +88,18 @@ final class ExternalApiTest extends TestCase
         $this->expectExceptionObject(new ExternalServiceException('notion', 'HTTP 401 unauthorized API token is invalid.', 401));
         $this->app->make(NotionApi::class)->get('blocks/abc/children');
     }
+
+    public function testNotionChildrenFollowsPagination(): void
+    {
+        Http::fake(['notion.test/*' => Http::sequence()
+            ->push(['results' => [['id' => 'a'], ['id' => 'b']], 'has_more' => true, 'next_cursor' => 'c2'])
+            ->push(['results' => [['id' => 'c']], 'has_more' => true, 'next_cursor' => 'c3'])
+            ->push(['results' => [['id' => 'd']], 'has_more' => false, 'next_cursor' => null])]);
+
+        $blocks = $this->app->make(NotionApi::class)->children('parent');
+
+        self::assertSame(['a', 'b', 'c', 'd'], array_column($blocks, 'id'));
+        Http::assertSentCount(3);
+        Http::assertSent(fn (Request $r): bool => str_contains($r->url(), 'start_cursor=c3'));
+    }
 }

@@ -47,4 +47,31 @@ final class NotionApi
 
         return $body;
     }
+
+    /** @return list<array<string, mixed>> */
+    public function children(string $blockId): array
+    {
+        $blocks = [];
+        $cursor = null;
+
+        do {
+            $query = ['page_size' => 100];
+            if ($cursor !== null) {
+                $query['start_cursor'] = $cursor;
+            }
+
+            $page = $this->get('blocks/' . rawurlencode($blockId) . '/children', $query);
+            foreach (is_array($page['results'] ?? null) ? $page['results'] : [] as $block) {
+                if (is_array($block)) {
+                    $blocks[] = $block;
+                }
+            }
+
+            $cursor = ($page['has_more'] ?? false) === true && is_string($page['next_cursor'] ?? null)
+                ? $page['next_cursor']
+                : null;
+        } while ($cursor !== null);
+
+        return $blocks;
+    }
 }
