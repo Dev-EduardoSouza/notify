@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
 
     'rate_limit_per_minute' => (int) env('RATE_LIMIT_PER_MINUTE', 60),
-    'max_body_bytes' => (int) env('MAX_BODY_BYTES', 65536),
+    'max_body_bytes' => (int) env('MAX_BODY_BYTES', 262144),
     'delivery_retention_days' => (int) env('DELIVERY_RETENTION_DAYS', 30),
     'docs_enabled' => (bool) env('DOCS_ENABLED', true),
 
