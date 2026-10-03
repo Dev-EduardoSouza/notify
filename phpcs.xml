@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="project">
+    <arg name="extensions" value="php"/>
+    <arg name="cache" value=".phpcs-cache"/>
+    <arg name="colors"/>
+    <arg value="p"/>
+    <file>src</file>
+    <file>tests</file>
+    <file>bin</file>
+    <file>public</file>
+    <rule ref="PSR12"/>
+</ruleset>

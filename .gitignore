@@ -1,0 +1,10 @@
+/.env
+/vendor/
+/storage/*
+!/storage/.gitkeep
+!/storage/logs/
+/storage/logs/*
+!/storage/logs/.gitkeep
+/dev/stubs/state/
+/.phpunit.cache/
+/.phpcs-cache
