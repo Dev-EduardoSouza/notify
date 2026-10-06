@@ -5,7 +5,7 @@
     "description": "Microsserviço de notificações (Telegram e outros canais) para hospedagem compartilhada.",
     "keywords": [
         "notifications",
-        "telegram"
+        "messages"
     ],
     "license": "proprietary",
     "require": {
@@ -13,7 +13,6 @@
         "ext-curl": "*",
         "ext-mbstring": "*",
         "ext-pdo_sqlite": "*",
-        "dedoc/scramble": "^0.13.47",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0"
     },
@@ -22,8 +21,7 @@
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^12.5.12",
-        "symfony/yaml": "^7.4"
+        "phpunit/phpunit": "^12.5.12"
     },
     "autoload": {
         "psr-4": {
@@ -71,9 +69,6 @@
         ],
         "cs": [
             "pint --test"
-        ],
-        "openapi": [
-            "@php dev/export-openapi.php"
         ]
     },
     "extra": {

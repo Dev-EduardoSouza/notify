@@ -18,11 +18,9 @@ final class DiagnoseCommand extends Command
         'APP_KEY' => 'app.key',
         'TELEGRAM_BOT_TOKEN' => 'notifications.channels.telegram.bot_token',
         'TELEGRAM_RECIPIENTS' => 'notifications.channels.telegram.recipients',
-        'NOTION_TOKEN' => 'notifications.notion.token',
-        'LINKEDIN_PARENT_PAGE_ID' => 'notifications.linkedin_drafts.parent_page_id',
     ];
 
-    public const HOSTS = ['https://api.telegram.org', 'https://api.notion.com'];
+    public const HOSTS = ['https://api.telegram.org'];
 
     protected $signature = 'diagnose {--offline : Skip the connectivity checks}';
 

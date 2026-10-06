@@ -16,11 +16,6 @@ use App\Notifications\IdempotencyConflictException;
 use App\Notifications\NotificationRequest;
 use App\Notifications\NotificationService;
 use App\Notifications\UnsupportedFormatException;
-use Dedoc\Scramble\Attributes\BodyParameter;
-use Dedoc\Scramble\Attributes\Endpoint;
-use Dedoc\Scramble\Attributes\HeaderParameter;
-use Dedoc\Scramble\Attributes\IgnoreResponse;
-use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -39,22 +34,6 @@ final class NotificationController
     ) {
     }
 
-    #[Endpoint(operationId: 'sendNotification', title: 'Send a notification', description: 'Delivers the text synchronously through the chosen channel. Long texts are split into several messages. Temporary failures (rate limit, channel outage) return 202 and are retried automatically.')]
-    #[HeaderParameter('Idempotency-Key', 'Optional. Repeating the same key with the same body returns the original notification without sending again; a different body returns 422.', required: false, type: 'string', example: 'order-123-paid')]
-    #[BodyParameter('recipient', 'Recipient alias allowed for this API key.', required: true, type: 'string', example: 'eduardo')]
-    #[BodyParameter('channel', 'Delivery channel.', required: true, type: 'string', example: 'telegram')]
-    #[BodyParameter('text', 'Message text, up to 20000 characters.', required: true, type: 'string', example: 'Pedido 123 pago.')]
-    #[BodyParameter('format', 'plain (default) or html (Telegram HTML subset).', required: false, type: 'string', example: 'plain')]
-    #[IgnoreResponse(200)]
-    #[Response(201, 'Delivered.', type: 'DeliveryResource')]
-    #[Response(202, 'Accepted; delivery will be retried automatically.', type: 'DeliveryResource')]
-    #[Response(400, 'Body is not a JSON object.', type: 'array{code: string, message: string}')]
-    #[Response(401, 'Missing or invalid API key.', type: 'array{code: string, message: string}')]
-    #[Response(403, 'Recipient not allowed for this API key.', type: 'array{code: string, message: string}')]
-    #[Response(413, 'Body too large.', type: 'array{code: string, message: string}')]
-    #[Response(422, 'Invalid body, unknown recipient, unsupported format or Idempotency-Key conflict.', type: 'array{code: string, message: string, errors?: array<string, list<string>>}')]
-    #[Response(429, 'Rate limit exceeded; see Retry-After.', type: 'array{code: string, message: string}')]
-    #[Response(502, 'The channel rejected the notification permanently.', type: 'array{code: string, message: string, delivery_id: string}')]
     public function store(Request $request): JsonResponse
     {
         $key = AuthenticateApiKey::keyFrom($request);
@@ -89,11 +68,6 @@ final class NotificationController
         return $response;
     }
 
-    #[Endpoint(operationId: 'getNotification', title: 'Get a notification', description: 'Returns the delivery status. Only the API key that created the notification can read it.')]
-    #[Response(200, 'Current delivery status.', type: 'DeliveryResource')]
-    #[Response(401, 'Missing or invalid API key.', type: 'array{code: string, message: string}')]
-    #[Response(404, 'Not found or created by another key.', type: 'array{code: string, message: string}')]
-    #[Response(429, 'Rate limit exceeded; see Retry-After.', type: 'array{code: string, message: string}')]
     public function show(Request $request, string $id): JsonResponse
     {
         $key = AuthenticateApiKey::keyFrom($request);

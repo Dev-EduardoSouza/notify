@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Integrations;
 
 use App\Integrations\ExternalServiceException;
-use App\Integrations\Notion\NotionApi;
 use App\Integrations\Telegram\TelegramApi;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -22,9 +21,6 @@ final class ExternalApiTest extends TestCase
         config([
             'notifications.channels.telegram.api_base' => 'https://tg.test',
             'notifications.channels.telegram.bot_token' => self::TOKEN,
-            'notifications.notion.api_base' => 'https://notion.test',
-            'notifications.notion.token' => 'secret_notion',
-            'notifications.notion.version' => '2022-06-28',
         ]);
     }
 
@@ -69,37 +65,6 @@ final class ExternalApiTest extends TestCase
         }
     }
 
-    public function testNotionSendsVersionAndToken(): void
-    {
-        Http::fake(['notion.test/*' => Http::response(['results' => [], 'has_more' => false])]);
 
-        $body = $this->app->make(NotionApi::class)->get('blocks/abc/children', ['page_size' => 100]);
 
-        self::assertSame(['results' => [], 'has_more' => false], $body);
-        Http::assertSent(fn (Request $r): bool => $r->url() === 'https://notion.test/v1/blocks/abc/children?page_size=100'
-            && $r->hasHeader('Notion-Version', '2022-06-28')
-            && $r->hasHeader('Authorization', 'Bearer secret_notion'));
-    }
-
-    public function testNotionHttpErrorBecomesException(): void
-    {
-        Http::fake(['notion.test/*' => Http::response(['code' => 'unauthorized', 'message' => 'API token is invalid.'], 401)]);
-
-        $this->expectExceptionObject(new ExternalServiceException('notion', 'HTTP 401 unauthorized API token is invalid.', 401));
-        $this->app->make(NotionApi::class)->get('blocks/abc/children');
-    }
-
-    public function testNotionChildrenFollowsPagination(): void
-    {
-        Http::fake(['notion.test/*' => Http::sequence()
-            ->push(['results' => [['id' => 'a'], ['id' => 'b']], 'has_more' => true, 'next_cursor' => 'c2'])
-            ->push(['results' => [['id' => 'c']], 'has_more' => true, 'next_cursor' => 'c3'])
-            ->push(['results' => [['id' => 'd']], 'has_more' => false, 'next_cursor' => null])]);
-
-        $blocks = $this->app->make(NotionApi::class)->children('parent');
-
-        self::assertSame(['a', 'b', 'c', 'd'], array_column($blocks, 'id'));
-        Http::assertSentCount(3);
-        Http::assertSent(fn (Request $r): bool => str_contains($r->url(), 'start_cursor=c3'));
-    }
 }
