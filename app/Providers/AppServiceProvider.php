@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Auth\ClientKeyRegistry;
 use App\Http\Middleware\AuthenticateApiKey;
 use App\Integrations\Telegram\TelegramApi;
 use App\Notifications\Channels\ChannelRegistry;
@@ -31,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
             (string) config('notifications.channels.telegram.api_base'),
             (string) config('notifications.channels.telegram.bot_token'),
         ));
+
+        $this->app->singleton(ClientKeyRegistry::class, fn (): ClientKeyRegistry => new ClientKeyRegistry((string) config('notifications.api_keys')));
 
         $this->app->bind(TextSplitter::class, fn (): TextSplitter => new TextSplitter(3500));
 
