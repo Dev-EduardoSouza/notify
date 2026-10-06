@@ -45,6 +45,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('api-key', fn (Request $request): Limit => Limit::perMinute(max(1, (int) config('notifications.rate_limit_per_minute')))
-            ->by('api-key:' . AuthenticateApiKey::keyFrom($request)->id));
+            ->by('api-key:' . AuthenticateApiKey::keyFrom($request)->name));
     }
 }
