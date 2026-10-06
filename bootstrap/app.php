@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\ErrorResponder;
 use App\Http\Middleware\AuthenticateApiKey;
+use App\Http\Middleware\LogMessageRequest;
 use App\Http\Middleware\LimitRequestBody;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(LimitRequestBody::class);
         $middleware->prepend(SecurityHeaders::class);
         $middleware->prependToPriorityList(ThrottleRequests::class, AuthenticateApiKey::class);
+        $middleware->prependToPriorityList(AuthenticateApiKey::class, LogMessageRequest::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => true);
