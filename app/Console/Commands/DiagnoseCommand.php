@@ -12,12 +12,13 @@ final class DiagnoseCommand extends Command
 {
     public const MIN_PHP = '8.3.0';
 
-    public const REQUIRED_EXTENSIONS = ['curl', 'json', 'mbstring', 'openssl', 'pdo_sqlite'];
+    public const REQUIRED_EXTENSIONS = ['curl', 'json', 'mbstring', 'openssl'];
 
     public const REQUIRED_CONFIG = [
         'APP_KEY' => 'app.key',
         'TELEGRAM_BOT_TOKEN' => 'notifications.channels.telegram.bot_token',
         'TELEGRAM_RECIPIENTS' => 'notifications.channels.telegram.recipients',
+        'API_KEYS' => 'notifications.api_keys',
     ];
 
     public const HOSTS = ['https://api.telegram.org'];
@@ -44,7 +45,7 @@ final class DiagnoseCommand extends Command
             $this->report(extension_loaded($extension), sprintf('extension %s', $extension));
         }
 
-        foreach ([storage_path(), storage_path('logs'), database_path()] as $folder) {
+        foreach ([storage_path('logs'), storage_path('framework/cache')] as $folder) {
             $this->report($this->isWritable($folder), sprintf('writable %s', $folder));
         }
 

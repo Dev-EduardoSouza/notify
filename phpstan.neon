@@ -8,5 +8,4 @@ parameters:
         - app
         - config
         - routes
-        - database
         - tests

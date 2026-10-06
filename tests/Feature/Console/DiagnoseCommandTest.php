@@ -13,7 +13,7 @@ final class DiagnoseCommandTest extends TestCase
         $this->app->useStoragePath('/nonexistent/storage');
 
         $this->artisan('diagnose', ['--offline' => true])
-            ->expectsOutput('[FALHA] writable /nonexistent/storage')
+            ->expectsOutput('[FALHA] writable /nonexistent/storage/logs')
             ->assertExitCode(1);
     }
 
