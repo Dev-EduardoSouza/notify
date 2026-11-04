@@ -21,6 +21,7 @@ return [
             'instance' => env('WHATSAPP_INSTANCE', ''),
             'recipients' => env('WHATSAPP_RECIPIENTS', ''),
             'idle_reset_minutes' => (int) env('WHATSAPP_IDLE_RESET_MINUTES', 30),
+            'max_attempts' => (int) env('WHATSAPP_MAX_ATTEMPTS', 5),
         ],
     ],
 

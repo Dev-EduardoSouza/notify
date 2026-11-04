@@ -67,6 +67,61 @@ final class WhatsAppWorkTest extends TestCase
         self::assertSame(OutboxStatus::Queued, $entry->refresh()->status);
     }
 
+    public function testFailureSchedulesBackoffAndKeepsTextForRetry(): void
+    {
+        Http::fake(['evolution.test/*' => Http::response([], 503)]);
+        $entry = $this->enqueue('tente de novo');
+
+        $this->artisan('whatsapp:work', ['--once' => true])->assertSuccessful();
+
+        $entry->refresh();
+        self::assertSame(OutboxStatus::Queued, $entry->status);
+        self::assertSame(1, $entry->attempts);
+        self::assertSame('tente de novo', $entry->text);
+        self::assertNotNull($entry->last_error);
+        self::assertEqualsWithDelta(3, now()->diffInSeconds($entry->next_attempt_at, false), 2);
+    }
+
+    public function testFifthFailureMarksFailedAndErasesText(): void
+    {
+        Http::fake(['evolution.test/*' => Http::response([], 503)]);
+        $entry = $this->enqueue('ultima chance');
+        $entry->update(['attempts' => 4]);
+
+        $this->artisan('whatsapp:work', ['--once' => true])->assertSuccessful();
+
+        $entry->refresh();
+        self::assertSame(OutboxStatus::Failed, $entry->status);
+        self::assertSame(5, $entry->attempts);
+        self::assertNull($entry->text);
+    }
+
+    public function testLastErrorHoldsNeitherKeyNorNumber(): void
+    {
+        config(['notifications.channels.whatsapp.api_key' => 'segredo-da-evolution']);
+        Http::fake(['evolution.test/*' => Http::response(['error' => 'falha 5571999990000 segredo-da-evolution'], 500)]);
+        $entry = $this->enqueue('x');
+
+        $this->artisan('whatsapp:work', ['--once' => true])->assertSuccessful();
+
+        $error = (string) $entry->refresh()->last_error;
+        self::assertNotSame('', $error);
+        self::assertStringNotContainsString('5571999990000', $error);
+        self::assertStringNotContainsString('segredo-da-evolution', $error);
+    }
+
+    public function testMessageStuckInSendingReturnsToQueueAndIsSentOnRestart(): void
+    {
+        Http::fake(['evolution.test/*' => Http::response([], 201)]);
+        $entry = $this->enqueue('presa');
+        $entry->update(['status' => OutboxStatus::Sending]);
+
+        $this->artisan('whatsapp:work', ['--once' => true])->assertSuccessful();
+
+        self::assertSame(OutboxStatus::Sent, $entry->refresh()->status);
+        Http::assertSentCount(1);
+    }
+
     private function enqueue(string $text): WhatsAppOutbox
     {
         return WhatsAppOutbox::create([

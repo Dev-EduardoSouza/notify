@@ -22,6 +22,22 @@ final class WhatsAppPacingTest extends TestCase
         }
     }
 
+    public function testTwoHundredFiftyMessagesWalkThroughEveryStep(): void
+    {
+        $now = CarbonImmutable::parse('2026-11-04 12:00:00');
+        $pacing = WhatsAppPacing::current();
+        $seen = [];
+
+        for ($i = 0; $i < 250; $i++) {
+            $seen[$pacing->delaySeconds($now, 30)] = true;
+            $pacing->registerSent($now, 30);
+            $now = $now->addSeconds(3);
+        }
+
+        self::assertSame([3, 6, 12, 24, 48, 90], array_keys($seen));
+        self::assertSame(250, WhatsAppPacing::current()->sequencia);
+    }
+
     public function testSequenceResetsAfterIdleMinutes(): void
     {
         $now = CarbonImmutable::parse('2026-11-04 12:00:00');
