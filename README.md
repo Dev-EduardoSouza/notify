@@ -2,11 +2,9 @@
 
 Serviço HTTP que entrega mensagens de texto em nome de outros apps. Um app chama `POST /v1/messages` com uma chave de API, e o notify entrega a mensagem no Telegram ou no WhatsApp.
 
-- **Telegram:** entrega na hora, sem fila e sem guardar o texto.
-- **WhatsApp (Evolution API):** a mensagem entra numa fila no Postgres e um worker a envia com pausa crescente entre os envios, para reduzir o risco de banimento do número. O texto sai do banco assim que a mensagem é enviada ou falha de vez.
-- **Chaves por app:** cada app recebe uma chave presa a uma lista de canais e destinatários. O `.env` guarda só o hash sha256.
-- **Destinatários por apelido:** os apps enviam `"to": "eduardo"` e nunca veem chat id nem número.
-- **Logs sem dados sensíveis:** uma linha JSON por requisição, sem texto, token, chave nem chat id.
+No Telegram a entrega é imediata, sem fila e sem guardar o texto. No WhatsApp, pela Evolution API, a mensagem entra numa fila no Postgres e um worker a envia com pausa crescente entre os envios, para reduzir o risco de banimento do número. O texto sai do banco assim que a mensagem é enviada ou falha de vez.
+
+Cada app recebe uma chave presa a uma lista de canais e destinatários, e o `.env` guarda só o hash sha256. Os apps enviam um apelido (`"to": "eduardo"`) e nunca veem o chat id nem o número. O log tem uma linha JSON por requisição, sem texto, token, chave nem chat id.
 
 Laravel 13 e PHP 8.3. Roda em hospedagem compartilhada só com o Telegram. O WhatsApp precisa de um servidor com Postgres e de um processo sempre ativo, como um VPS.
 
@@ -57,7 +55,7 @@ A resposta esperada é `{"status":"ok"}`.
 
 ## Telegram
 
-1. No Telegram, abra uma conversa com o **@BotFather** e mande `/newbot`.
+1. No Telegram, abra uma conversa com o @BotFather e mande `/newbot`.
 2. Escolha o nome e o usuário do bot. O BotFather responde com o token (`123456789:AA...`). Coloque em `TELEGRAM_BOT_TOKEN`.
 3. Abra a conversa com o seu bot e mande qualquer mensagem. O bot só escreve para quem já falou com ele.
 4. Descubra o chat id:
@@ -92,7 +90,7 @@ podman compose up -d
 
 Com Docker no lugar do Podman, use `docker compose` e tire a rede `lerd` do compose.
 
-Para parear o chip, abra `http://localhost:8080/manager`, informe a chave `AUTHENTICATION_API_KEY`, entre na instância e leia o QR em WhatsApp → Aparelhos conectados. O script `dev/evolution/validar.sh` faz o mesmo pela linha de comando:
+Para parear o chip, abra `http://localhost:8080/manager`, informe a chave `AUTHENTICATION_API_KEY`, entre na instância e leia o QR no menu Aparelhos conectados do WhatsApp. O script `dev/evolution/validar.sh` faz o mesmo pela linha de comando:
 
 ```bash
 dev/evolution/validar.sh criar    # cria a instância notify-teste
@@ -139,7 +137,9 @@ php artisan whatsapp:work
 
 Ele roda em laço, pega a mensagem `queued` mais antiga com a hora de tentativa vencida e a envia pela Evolution. Use `--once` para sair quando não houver mais nada vencido.
 
-**Pausa entre envios.** Depois de cada envio o worker espera `min(90, 3 × 2^(n ÷ 40))` segundos, onde `n` é o número de mensagens enviadas na sequência:
+### Pausa entre envios
+
+Depois de cada envio o worker espera `min(90, 3 × 2^(n ÷ 40))` segundos, onde `n` é o número de mensagens enviadas na sequência:
 
 | Mensagens na sequência | Pausa |
 |---|---|
@@ -152,11 +152,17 @@ Ele roda em laço, pega a mensagem `queued` mais antiga com a hora de tentativa 
 
 Depois de `WHATSAPP_IDLE_RESET_MINUTES` minutos sem envio, a sequência volta a zero.
 
-**Falhas.** A Evolution respondendo `429` ou `5xx`, ou sem responder, é tentada de novo. Os outros erros `4xx`, como número que não existe no WhatsApp, também contam como tentativa. A espera cresce a cada falha, `min(90, 3 × 2^(tentativa-1))` segundos (3, 6, 12, 24 e 48), e na `WHATSAPP_MAX_ATTEMPTS`-ésima falha a mensagem vira `failed`. O texto é apagado do banco quando a mensagem vira `sent` ou `failed`, e `last_error` nunca contém o número nem a chave.
+### Falhas
 
-**Reinício.** Ao iniciar, o worker devolve à fila as mensagens que ficaram em `sending` por uma queda. Se a queda ocorrer depois do envio e antes do registro, essa mensagem pode sair duas vezes.
+A Evolution respondendo `429` ou `5xx`, ou sem responder, é tentada de novo. Os outros erros `4xx`, como número que não existe no WhatsApp, também contam como tentativa. A espera cresce a cada falha, `min(90, 3 × 2^(tentativa-1))` segundos (3, 6, 12, 24 e 48), e na `WHATSAPP_MAX_ATTEMPTS`-ésima falha a mensagem vira `failed`. O texto é apagado do banco quando a mensagem vira `sent` ou `failed`, e `last_error` nunca contém o número nem a chave.
 
-**Um worker por vez.** Cada processo conta o próprio ritmo. Dois workers juntos enviam mais rápido do que a pausa permite e aumentam o risco de banimento. Em produção, mantenha um único worker sempre ativo com `systemd` ou `supervisor`.
+### Reinício
+
+Ao iniciar, o worker devolve à fila as mensagens que ficaram em `sending` por uma queda. Se a queda ocorrer depois do envio e antes do registro, essa mensagem pode sair duas vezes.
+
+### Um worker por vez
+
+Cada processo conta o próprio ritmo. Dois workers juntos enviam mais rápido do que a pausa permite e aumentam o risco de banimento. Em produção, mantenha um único worker sempre ativo com `systemd` ou `supervisor`.
 
 ## Chaves de API
 
@@ -203,7 +209,7 @@ Corpo JSON com exatamente três campos:
 
 Campos a mais são recusados. No Telegram, textos longos são divididos em partes de até 3500 caracteres, de preferência em quebra de linha ou espaço. No WhatsApp o texto vai inteiro, numa única mensagem.
 
-**Telegram:** o `200` só volta depois que todas as partes foram entregues.
+No Telegram, o `200` só volta depois que todas as partes foram entregues.
 
 ```http
 HTTP/1.1 200 OK
@@ -211,7 +217,7 @@ HTTP/1.1 200 OK
 {"status":"sent","parts":1}
 ```
 
-**WhatsApp:** a resposta é `202`, porque a mensagem só foi enfileirada. O `id` identifica a linha na fila.
+No WhatsApp, a resposta é `202`, porque a mensagem só foi enfileirada. O `id` identifica a linha na fila.
 
 ```http
 HTTP/1.1 202 Accepted
@@ -281,7 +287,7 @@ scp -P <porta> build/notify-*.tar.gz <usuario>@<host>:~
 ssh -p <porta> <usuario>@<host>
 ```
 
-**Primeira instalação:**
+Na primeira instalação:
 
 ```bash
 cd ~
@@ -303,7 +309,7 @@ cp ~/notify/public/index.php ~/notify/public/.htaccess ~/notify/public/robots.tx
 echo "<?php return '$HOME/notify';" > app-path.php
 ```
 
-**Atualização:** a versão nova entra numa pasta limpa e herda o `.env` e o `storage` da anterior.
+Na atualização, a versão nova entra numa pasta limpa e herda o `.env` e o `storage` da anterior.
 
 ```bash
 cd ~
