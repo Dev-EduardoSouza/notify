@@ -15,6 +15,12 @@ return [
             'api_base' => env('TELEGRAM_API_BASE', 'https://api.telegram.org'),
             'recipients' => env('TELEGRAM_RECIPIENTS', ''),
         ],
+        'whatsapp' => [
+            'api_base' => env('WHATSAPP_API_BASE', ''),
+            'api_key' => env('WHATSAPP_API_KEY'),
+            'instance' => env('WHATSAPP_INSTANCE', ''),
+            'recipients' => env('WHATSAPP_RECIPIENTS', ''),
+        ],
     ],
 
 ];

@@ -6,10 +6,12 @@ namespace App\Providers;
 
 use App\Auth\ClientKeyRegistry;
 use App\Http\Middleware\AuthenticateApiKey;
+use App\Integrations\Evolution\EvolutionApi;
 use App\Integrations\Telegram\TelegramApi;
 use App\Notifications\Channels\ChannelRegistry;
 use App\Notifications\Channels\NotificationChannel;
 use App\Notifications\Channels\Telegram\TelegramChannel;
+use App\Notifications\Channels\WhatsApp\WhatsAppChannel;
 use App\Notifications\Text\TextSplitter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     /** @var list<class-string<NotificationChannel>> */
     public const CHANNELS = [
         TelegramChannel::class,
+        WhatsAppChannel::class,
     ];
 
     public function register(): void
@@ -31,6 +34,13 @@ class AppServiceProvider extends ServiceProvider
             $app->make(Factory::class),
             (string) config('notifications.channels.telegram.api_base'),
             (string) config('notifications.channels.telegram.bot_token'),
+        ));
+
+        $this->app->singleton(EvolutionApi::class, fn (Application $app): EvolutionApi => new EvolutionApi(
+            $app->make(Factory::class),
+            (string) config('notifications.channels.whatsapp.api_base'),
+            (string) config('notifications.channels.whatsapp.api_key'),
+            (string) config('notifications.channels.whatsapp.instance'),
         ));
 
         $this->app->singleton(ClientKeyRegistry::class, fn (): ClientKeyRegistry => new ClientKeyRegistry((string) config('notifications.api_keys')));

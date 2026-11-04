@@ -32,6 +32,10 @@
         <env name="TELEGRAM_BOT_TOKEN" value="0:TEST_TOKEN"/>
         <env name="TELEGRAM_API_BASE" value="https://telegram.invalid"/>
         <env name="TELEGRAM_RECIPIENTS" value="eduardo:1"/>
+        <env name="WHATSAPP_API_BASE" value="https://evolution.invalid"/>
+        <env name="WHATSAPP_API_KEY" value="TEST_EVOLUTION_KEY"/>
+        <env name="WHATSAPP_INSTANCE" value="teste"/>
+        <env name="WHATSAPP_RECIPIENTS" value="eduardo:5571999990000"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>
