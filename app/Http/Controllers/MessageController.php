@@ -8,6 +8,7 @@ use App\Http\ApiException;
 use App\Http\Middleware\AuthenticateApiKey;
 use App\Messages\ChannelDeliveryException;
 use App\Messages\MessageDispatcher;
+use App\Messages\MessageEnqueuer;
 use App\Notifications\Channels\RecipientResolver;
 use App\Notifications\Channels\UnknownChannelException;
 use App\Notifications\Channels\UnknownRecipientException;
@@ -22,8 +23,10 @@ final class MessageController
 
     private const FIELDS = ['channel', 'to', 'text'];
 
-    public function __construct(private readonly MessageDispatcher $dispatcher)
-    {
+    public function __construct(
+        private readonly MessageDispatcher $dispatcher,
+        private readonly MessageEnqueuer $enqueuer,
+    ) {
     }
 
     public function store(Request $request): JsonResponse
@@ -39,6 +42,12 @@ final class MessageController
         }
 
         try {
+            if ($this->enqueuer->handles($message['channel'])) {
+                $id = $this->enqueuer->enqueue($key->name, $message['channel'], $message['to'], $message['text']);
+
+                return new JsonResponse(['status' => 'queued', 'id' => $id], 202);
+            }
+
             $parts = $this->dispatcher->send($message['channel'], $message['to'], $message['text']);
         } catch (UnknownChannelException) {
             throw new ApiException(422, 'unknown_channel', 'The channel is not available.');

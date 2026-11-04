@@ -29,6 +29,7 @@ final class LogMessageRequest
             'to' => $this->safe($body['to'] ?? null, RecipientResolver::ALIAS_PATTERN),
             'status' => $response->getStatusCode(),
             'parts' => is_int($result['parts'] ?? null) ? $result['parts'] : null,
+            'queued_id' => is_int($result['id'] ?? null) ? $result['id'] : null,
             'code' => is_string($result['code'] ?? null) ? $result['code'] : null,
         ], fn (mixed $value): bool => $value !== null));
 

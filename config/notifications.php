@@ -20,6 +20,7 @@ return [
             'api_key' => env('WHATSAPP_API_KEY'),
             'instance' => env('WHATSAPP_INSTANCE', ''),
             'recipients' => env('WHATSAPP_RECIPIENTS', ''),
+            'idle_reset_minutes' => (int) env('WHATSAPP_IDLE_RESET_MINUTES', 30),
         ],
     ],
 

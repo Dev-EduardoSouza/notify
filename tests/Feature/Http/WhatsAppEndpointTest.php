@@ -6,6 +6,9 @@ namespace Tests\Feature\Http;
 
 use App\Auth\ClientKeyRegistry;
 use App\Integrations\Evolution\EvolutionApi;
+use App\Messages\OutboxStatus;
+use App\Messages\WhatsAppOutbox;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
@@ -13,6 +16,8 @@ use Tests\TestCase;
 
 final class WhatsAppEndpointTest extends TestCase
 {
+    use RefreshDatabase;
+
     private string $key;
 
     protected function setUp(): void
@@ -30,15 +35,34 @@ final class WhatsAppEndpointTest extends TestCase
         $this->app->forgetInstance(EvolutionApi::class);
     }
 
-    public function testSendsThroughTheWhatsAppChannel(): void
+    public function testQueuesTheMessageInsteadOfSendingIt(): void
     {
-        Http::fake(['evo.test/*' => Http::response(['status' => 'PENDING'], 201)]);
+        Http::fake();
 
-        $this->send(['channel' => 'whatsapp', 'to' => 'eduardo', 'text' => 'oi'])
-            ->assertOk()
-            ->assertExactJson(['status' => 'sent', 'parts' => 1]);
+        $response = $this->send(['channel' => 'whatsapp', 'to' => 'eduardo', 'text' => 'oi'])
+            ->assertStatus(202)
+            ->assertJsonPath('status', 'queued');
 
-        Http::assertSent(fn ($r): bool => $r['number'] === '5575999990000' && $r['text'] === 'oi');
+        $entry = WhatsAppOutbox::query()->sole();
+        self::assertSame($entry->id, $response->json('id'));
+        self::assertSame('app', $entry->api_key_name);
+        self::assertSame('eduardo', $entry->recipient);
+        self::assertSame('oi', $entry->text);
+        self::assertSame(OutboxStatus::Queued, $entry->status);
+        self::assertSame(0, $entry->attempts);
+        self::assertNull($entry->last_error);
+        self::assertNull($entry->sent_at);
+        self::assertFalse($entry->next_attempt_at->isFuture());
+        Http::assertNothingSent();
+    }
+
+    public function testEachRequestCreatesItsOwnEntry(): void
+    {
+        $first = $this->send(['channel' => 'whatsapp', 'to' => 'eduardo', 'text' => 'um'])->json('id');
+        $second = $this->send(['channel' => 'whatsapp', 'to' => 'eduardo', 'text' => 'dois'])->json('id');
+
+        self::assertNotSame($first, $second);
+        self::assertSame(2, WhatsAppOutbox::query()->count());
     }
 
     public function testRecipientOutsideTheKeyIs403(): void
@@ -48,6 +72,7 @@ final class WhatsAppEndpointTest extends TestCase
         $this->send(['channel' => 'whatsapp', 'to' => 'maria', 'text' => 'oi'])
             ->assertStatus(403)->assertJsonPath('code', 'recipient_not_allowed');
         Http::assertNothingSent();
+        self::assertSame(0, WhatsAppOutbox::query()->count());
     }
 
     public function testAllowedAliasWithoutANumberIs422(): void
@@ -57,22 +82,7 @@ final class WhatsAppEndpointTest extends TestCase
         $this->send(['channel' => 'whatsapp', 'to' => 'carla', 'text' => 'oi'])
             ->assertStatus(422)->assertJsonPath('code', 'unknown_recipient');
         Http::assertNothingSent();
-    }
-
-    public function testChannelFailureIs502WithoutNumberOrKey(): void
-    {
-        Http::fake(['evo.test/*' => Http::response([
-            'status' => 400,
-            'error' => 'Bad Request',
-            'response' => ['message' => [['exists' => false, 'number' => '5575999990000']]],
-        ], 400)]);
-
-        $response = $this->send(['channel' => 'whatsapp', 'to' => 'eduardo', 'text' => 'oi'])
-            ->assertStatus(502)
-            ->assertExactJson(['code' => 'channel_failed', 'message' => 'whatsapp: HTTP 400 recipient is not on WhatsApp (0 of 1 parts delivered)']);
-
-        self::assertStringNotContainsString('5575999990000', (string) $response->getContent());
-        self::assertStringNotContainsString('EVOLUTION-KEY-SECRET', (string) $response->getContent());
+        self::assertSame(0, WhatsAppOutbox::query()->count());
     }
 
     /**
