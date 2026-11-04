@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "notify/notification-service",
+    "name": "notify/notify",
     "type": "project",
     "description": "Microsserviço de notificações (Telegram e outros canais) para hospedagem compartilhada.",
     "keywords": [
