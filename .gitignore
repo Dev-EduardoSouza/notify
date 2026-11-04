@@ -27,6 +27,7 @@ Homestead.yaml
 Thumbs.db
 
 *.md
+!README.md
 /.env.*
 !/.env.example
 /build/
