@@ -190,6 +190,8 @@ Cada entrada de `API_KEYS` segue o formato `nome|sha256|canais|destinatários`, 
 
 ## Contrato da API
 
+A especificação OpenAPI está em [`openapi.yaml`](openapi.yaml). Dá para abri-la no Swagger Editor ou usá-la para gerar um cliente.
+
 | Método | Rota | Autenticação |
 |---|---|---|
 | `GET` | `/health` | nenhuma |
