@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: notify
+  version: 1.0.0
+  description: |
+    Serviço HTTP que entrega mensagens de texto em nome de outros apps.
+
+    No Telegram a entrega é imediata e a resposta é `200`. No WhatsApp a mensagem entra numa fila e a resposta é `202`; um worker faz o envio depois.
+
+    Cada chave de API é presa a uma lista de canais e destinatários. Os destinatários são apelidos configurados no servidor, nunca chat ids nem números.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: https://notify.example.com
+    description: Troque pelo endereço da sua instalação
+  - url: http://localhost:8000
+    description: Servidor local (php artisan serve)
+tags:
+  - name: Mensagens
+  - name: Saúde
+paths:
+  /health:
+    get:
+      tags: [Saúde]
+      summary: Verifica se o serviço está de pé
+      operationId: health
+      security: []
+      responses:
+        "200":
+          description: O serviço está respondendo.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+              example:
+                status: ok
+  /v1/messages:
+    post:
+      tags: [Mensagens]
+      summary: Envia uma mensagem de texto
+      operationId: sendMessage
+      description: |
+        As verificações seguem esta ordem: tamanho do corpo, chave, rate limit, formato do JSON, campos, permissão de canal, permissão de destinatário e, por último, a entrega.
+
+        No Telegram, textos acima de 3500 caracteres são divididos em partes, de preferência em quebra de linha ou espaço, e o `200` só volta depois que todas as partes foram entregues. No WhatsApp o texto vai inteiro, numa única mensagem.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageRequest"
+            examples:
+              telegram:
+                summary: Mensagem no Telegram
+                value:
+                  channel: telegram
+                  to: eduardo
+                  text: Olá pelo notify
+              whatsapp:
+                summary: Mensagem no WhatsApp
+                value:
+                  channel: whatsapp
+                  to: eduardo
+                  text: Olá pelo notify
+      responses:
+        "200":
+          description: Mensagem entregue (canais síncronos, como o Telegram).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageSent"
+              example:
+                status: sent
+                parts: 1
+        "202":
+          description: Mensagem aceita e enfileirada (WhatsApp). O envio acontece depois, pelo worker.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageQueued"
+              example:
+                status: queued
+                id: 123
+        "400":
+          description: Corpo sem `Content-Type` JSON, JSON inválido ou que não seja um objeto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: bad_request
+                message: "The request body must be JSON (Content-Type: application/json)."
+        "401":
+          description: Header `Authorization` ausente ou chave desconhecida.
+          headers:
+            WWW-Authenticate:
+              description: Sempre `Bearer`.
+              schema:
+                type: string
+                example: Bearer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: unauthorized
+                message: Missing or invalid API key.
+        "403":
+          description: A chave não tem permissão para o canal ou para o destinatário.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                channel_not_allowed:
+                  value:
+                    code: channel_not_allowed
+                    message: This API key is not allowed to use this channel.
+                recipient_not_allowed:
+                  value:
+                    code: recipient_not_allowed
+                    message: This API key is not allowed to send to this recipient.
+        "413":
+          description: Corpo maior que `MAX_BODY_BYTES` (padrão 256 KB).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: payload_too_large
+                message: The request body exceeds 262144 bytes.
+        "422":
+          description: |
+            Campo faltando, campo a mais, tipo errado, apelido fora do formato ou texto acima de 20000 caracteres (`validation_failed`, com o detalhe em `errors`). Também volta quando a chave permite um canal ou apelido que o serviço não tem configurado (`unknown_channel`, `unknown_recipient`).
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/ValidationError"
+                  - $ref: "#/components/schemas/Error"
+              examples:
+                validation_failed:
+                  value:
+                    code: validation_failed
+                    message: The request body is invalid.
+                    errors:
+                      text:
+                        - The text field is required.
+                unknown_channel:
+                  value:
+                    code: unknown_channel
+                    message: The channel is not available.
+                unknown_recipient:
+                  value:
+                    code: unknown_recipient
+                    message: The recipient is not configured for this channel.
+        "429":
+          description: A chave passou de `RATE_LIMIT_PER_MINUTE` (padrão 30) requisições no minuto.
+          headers:
+            Retry-After:
+              description: Segundos até a chave poder tentar de novo.
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: rate_limited
+                message: Too many requests.
+        "502":
+          description: O Telegram recusou a entrega ou não respondeu, mesmo depois das novas tentativas internas. O WhatsApp não gera este erro, porque a entrega acontece depois da resposta.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: channel_failed
+                message: "telegram: HTTP 400 Bad Request"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "Chave gerada com `php artisan keys:generate`, enviada como `Authorization: Bearer <chave>`."
+  schemas:
+    MessageRequest:
+      type: object
+      additionalProperties: false
+      required: [channel, to, text]
+      properties:
+        channel:
+          type: string
+          maxLength: 32
+          description: Canal permitido para a chave.
+          example: telegram
+        to:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9_-]{0,63}$"
+          description: Apelido do destinatário, configurado no servidor e permitido para a chave.
+          example: eduardo
+        text:
+          type: string
+          maxLength: 20000
+          description: Texto puro.
+          example: Olá pelo notify
+    MessageSent:
+      type: object
+      required: [status, parts]
+      properties:
+        status:
+          type: string
+          enum: [sent]
+        parts:
+          type: integer
+          minimum: 1
+          description: Em quantas mensagens o texto foi dividido.
+    MessageQueued:
+      type: object
+      required: [status, id]
+      properties:
+        status:
+          type: string
+          enum: [queued]
+        id:
+          type: integer
+          description: Identifica a linha na fila do WhatsApp.
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - bad_request
+            - unauthorized
+            - channel_not_allowed
+            - recipient_not_allowed
+            - payload_too_large
+            - validation_failed
+            - unknown_channel
+            - unknown_recipient
+            - rate_limited
+            - channel_failed
+        message:
+          type: string
+    ValidationError:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
