@@ -359,3 +359,7 @@ Para adicionar um canal, implemente `App\Notifications\Channels\NotificationChan
 Se o PHP local roda pelo Lerd, o `artisan serve` fica dentro do container e não é acessível pelo host: use `lerd link notify` e acesse `http://notify.test`. O PHP do Lerd também não recebe variáveis do shell (`VAR=x php ...` não tem efeito), então tudo vai no `.env`. Para interromper o worker nesse ambiente, use `podman exec lerd-php85-fpm pkill -f whatsapp:work`, porque Ctrl+C e `timeout` só encerram o cliente.
 
 Regras do projeto: código sem comentários (só PHPDoc de tipos exigido pelo PHPStan), commits em Conventional Commits em português e sem assinatura de ferramenta.
+
+## Licença
+
+MIT. Veja o arquivo [LICENSE](LICENSE).
